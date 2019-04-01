@@ -1,3 +1,10 @@
+/*
+File: <Process.java>
+Class: CS 470
+Assignment: Memory Management Project
+Programmers: Oti Oritsejafor, Jared Holzmeyer
+*/
+
 import java.util.*;
 import java.lang.*;
 
