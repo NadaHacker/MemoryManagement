@@ -26,10 +26,13 @@ public class MemoryManagement {
 	if (inputFile.isFile() && inputFile.canRead()){
 	    inputProcesses = loadInput(br);
 	}
-	//int result = runLRU(inputProcesses, numFrames);
-	//int result = runFIFO(inputProcesses, numFrames);
-	int result = runOPT(inputProcesses, numFrames);
-	System.out.printf("Number page faults with %d frames: %d\n", numFrames, result); 
+	int result = 0;
+	result = runLRU(inputProcesses, numFrames);
+	System.out.printf("LRU(w/ %d frames): # of page faults: %d\n", numFrames, result); 
+	result = runFIFO(inputProcesses, numFrames);
+	System.out.printf("FIFO(w/ %d frames): # of page faults: %d\n", numFrames, result); 
+	result = runOPT(inputProcesses, numFrames);
+	System.out.printf("OPT(w/ %d frames): # of page faults: %d\n", numFrames, result); 
     }
 
     public static int getNextOccurrence(ArrayList<Process> input, Process p, int index){
@@ -48,27 +51,26 @@ public class MemoryManagement {
 	ArrayList<Process> OPTlist = new ArrayList<>();
 	for (int i = 0; i < input.size(); i++) {
 	    if (OPTlist.size() < frames) {
-		//System.out.printf(" and\n");
 		if (checkIfExists(OPTlist, input.get(i)) == -1) { //doesn't exist
 		    Process current = new Process(input.get(i).getPID(), input.get(i).getPageRef());
 		    current.setOptRef(getNextOccurrence(input, current, i+1));
 		    OPTlist.add(current);
-		    System.out.printf("Adding page (%d,%d)\n", current.getPID(), current.getPageRef());
+		    //System.out.printf("Adding page (%d,%d)\n", current.getPID(), current.getPageRef());
     		    numPageFaults++;
 		}
 		else {
-		    OPTlist.get(i).setOptRef(getNextOccurrence(input, input.get(i), i+1));
+		    OPTlist.get(checkIfExists(OPTlist, input.get(i))).setOptRef(getNextOccurrence(input, input.get(i), i+1));
 		}
 	    }
 	    else if (checkIfExists(OPTlist, input.get(i)) > -1){
-		OPTlist.get(i).setOptRef(getNextOccurrence(input, input.get(i), i+1));
+		OPTlist.get(checkIfExists(OPTlist, input.get(i))).setOptRef(getNextOccurrence(input, input.get(i), i+1));
 	    }
 	    else {
 	        removeMaxOPTRef(OPTlist);
 		Process current = new Process(input.get(i).getPID(), input.get(i).getPageRef());
 		current.setOptRef(getNextOccurrence(input, current, i+1));
 		OPTlist.add(current);
-		System.out.printf("Adding page (%d,%d)\n", current.getPID(), current.getPageRef());
+		//System.out.printf("Adding page (%d,%d)\n", current.getPID(), current.getPageRef());
 		numPageFaults++;
 	    }
 	}
@@ -77,19 +79,19 @@ public class MemoryManagement {
 
     public static void removeMaxOPTRef(ArrayList<Process> list){
 	Process max = list.get(0);
-	System.out.printf("max uptsize: %d \n", max.getOptRef());
+	//System.out.printf("max uptsize: %d \n", max.getOptRef());
 	for (int i = 0; i < list.size(); i++){
 	    if (list.get(i).getOptRef() == -1){
-		System.out.printf("       Removing page (%d,%d)\n", list.get(i).getPID(), list.get(i).getPageRef());
+		//System.out.printf("       Removing page (%d,%d)\n", list.get(i).getPID(), list.get(i).getPageRef());
 		list.remove(i);
 		return;
 	    }
 	    if (list.get(i).getOptRef() > max.getOptRef()){
-		System.out.printf("max is now: pid=%d, with wtfsize=%d\n", list.get(i).getPID(), list.get(i).getOptRef());
+		//System.out.printf("max is now: pid=%d, with wtfsize=%d\n", list.get(i).getPID(), list.get(i).getOptRef());
 		max = list.get(i);
 	    }
 	}
-	System.out.printf("Removing page (%d,%d)\n", list.get(list.indexOf(max)).getPID(), list.get(list.indexOf(max)).getPageRef());
+	//System.out.printf("Removing page (%d,%d)\n", list.get(list.indexOf(max)).getPID(), list.get(list.indexOf(max)).getPageRef());
 	list.remove(list.indexOf(max));	
     }
     
@@ -249,11 +251,10 @@ public class MemoryManagement {
     public static int checkIfExists(ArrayList<Process> queue, Process p) {
 	int counter = 0;
 	for (Process item: queue){
-	    //System.out.println("hi");  tHis is where the problem is
-	    if ((p.getPID() == item.getPID()) && (p.getPageRef() == item.getPageRef())) { 
+	    if ((p.getPID() == item.getPID()) && (p.getPageRef() == item.getPageRef())) {
 		return counter;
 	    }
-	    counter        ++;
+	    counter++;
 	}
 	return -1;
     }
