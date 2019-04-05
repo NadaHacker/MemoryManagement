@@ -15,11 +15,11 @@ public class MemoryManagement {
     public static int numFrames;
     
     public static void main(String [] args) throws java.io.IOException {
-	if (args.length != 1){
-	    System.out.printf("USAGE: %s <input_file> <quantum_size>\n",args[0]);
+	if (args.length != 2){
+	    System.out.printf("USAGE: %s <input_file> <frames>\n",args[0]);
 	    System.exit(0);
 	}
-        numFrames = 3;
+        numFrames = Integer.parseInt(args[1]);
 	ArrayList<Process> inputProcesses = new ArrayList<Process>();
 	File inputFile = new File(args[0]);
 	BufferedReader br = new BufferedReader(new FileReader(inputFile));
@@ -31,48 +31,111 @@ public class MemoryManagement {
 	int result = runOPT(inputProcesses, numFrames);
 	System.out.printf("Number page faults with %d frames: %d\n", numFrames, result); 
     }
-    public static int runOPT(ArrayList<Process> input, int frames){
-	int numPageFaults = 0;
-	ArrayList<Process> OPTlist = new ArrayList<>();
-        ArrayList<Process> crystalBall = new ArrayList<>();
-	int i;
-	for (i = 0; i < input.size(); i++) {	   
-	    if (OPTlist.size() < frames) {
-		if (checkIfExists(OPTlist, input.get(i)) == -1) { 
-		    OPTlist.add(input.get(i));
-		    System.out.printf("Adding page (%d,%d)\n", input.get(i).getPID(), input.get(i).getPageRef());
-		    numPageFaults++;
-		}
-		else {
-		    int x = checkIfExists(OPTlist, input.get(i));
-		    System.out.printf("Removing page (%d,%d)\n", OPTlist.get(x).getPID(), OPTlist.get(x).getPageRef());
-		    OPTlist.remove(checkIfExists(LRUlist, input.get(i)));
-		    OPTlist.add(input.get(i));
-		    System.out.printf("Adding page (%d,%d)\n", input.get(i).getPID(), input.get(i).getPageRef());
-		}
-	    }
-	    else {
-		for (int j = 0; j < input.size(); j++){
-		    if ((input.get(i+1).getPID() == OPTlist.get(j).getPID()) && (input.get(i+1).getPageRef() == OPTlist.get(j).getpageRef())) {
-			crystalBall.add(OPTlist.get(j));
-		    }
-		    if (crystalBall.size() == OPTlist.size()){
-			OPTlist.remove(crystalBall.get(crystalBall.size()-1));
-			OPTlist.add(input.get(i));
-			numPageFaults++;
-		    }
-		    else {
-			for (int k = 0; k < OPTlist.size(); k++){
-			    for (int c = 0; c < crystalBall.size(); c++){
-				if ((crystalBall.get(i+1).getPID() == OPTlist.get(k).getPID()) && (crystallBall.get(i+1).getPageRef() == OPTlist.get(k).getpageRef())) {
-				    continue;
-				}
-			    }
-		    }
-		}
+
+    public static int getNextOccurrence(ArrayList<Process> input, Process p, int index){
+	//System.out.printf("index = %d, and input.size() = %d\n", index, input.size());
+	//System.out.printf("ing page ()\n");
+	for (int i = index; i < input.size(); i++){
+	    if ((p.getPID() == input.get(i).getPID()) && (p.getPageRef() == input.get(i).getPageRef())) { 
+		return i;
 	    }
 	}
+	return -1;
+    }
+
+    public static int runOPT(ArrayList<Process> input, int frames){
+     	int numPageFaults = 0;
+	ArrayList<Process> OPTlist = new ArrayList<>();
+	for (int i = 0; i < input.size(); i++) {
+	    if (OPTlist.size() < frames) {
+		//System.out.printf(" and\n");
+		if (checkIfExists(OPTlist, input.get(i)) == -1) { //doesn't exist
+		    Process current = new Process(input.get(i).getPID(), input.get(i).getPageRef());
+		    current.setOptRef(getNextOccurrence(input, current, i+1));
+		    OPTlist.add(current);
+		    System.out.printf("Adding page (%d,%d)\n", current.getPID(), current.getPageRef());
+    		    numPageFaults++;
+		}
+		else {
+		    OPTlist.get(i).setOptRef(getNextOccurrence(input, input.get(i), i+1));
+		}
+	    }
+	    else if (checkIfExists(OPTlist, input.get(i)) > -1){
+		OPTlist.get(i).setOptRef(getNextOccurrence(input, input.get(i), i+1));
+	    }
+	    else {
+	        removeMaxOPTRef(OPTlist);
+		Process current = new Process(input.get(i).getPID(), input.get(i).getPageRef());
+		current.setOptRef(getNextOccurrence(input, current, i+1));
+		OPTlist.add(current);
+		System.out.printf("Adding page (%d,%d)\n", current.getPID(), current.getPageRef());
+		numPageFaults++;
+	    }
+	}
+	return numPageFaults;
+    }
+
+    public static void removeMaxOPTRef(ArrayList<Process> list){
+	Process max = list.get(0);
+	System.out.printf("max uptsize: %d \n", max.getOptRef());
+	for (int i = 0; i < list.size(); i++){
+	    if (list.get(i).getOptRef() == -1){
+		System.out.printf("       Removing page (%d,%d)\n", list.get(i).getPID(), list.get(i).getPageRef());
+		list.remove(i);
+		return;
+	    }
+	    if (list.get(i).getOptRef() > max.getOptRef()){
+		System.out.printf("max is now: pid=%d, with wtfsize=%d\n", list.get(i).getPID(), list.get(i).getOptRef());
+		max = list.get(i);
+	    }
+	}
+	System.out.printf("Removing page (%d,%d)\n", list.get(list.indexOf(max)).getPID(), list.get(list.indexOf(max)).getPageRef());
+	list.remove(list.indexOf(max));	
+    }
     
+    // public static int runOPT(ArrayList<Process> input, int frames){
+    // 	int numPageFaults = 0;
+    // 	ArrayList<Process> OPTlist = new ArrayList<>();
+    //     ArrayList<Process> crystalBall = new ArrayList<>();
+    // 	int i;
+    // 	for (i = 0; i < input.size(); i++) {	   
+    // 	    if (OPTlist.size() < frames) {
+    // 		if (checkIfExists(OPTlist, input.get(i)) == -1) { 
+    // 		    OPTlist.add(input.get(i));
+    // 		    System.out.printf("Adding page (%d,%d)\n", input.get(i).getPID(), input.get(i).getPageRef());
+    // 		    numPageFaults++;
+    // 		}
+    // 		else {
+    // 		    int x = checkIfExists(OPTlist, input.get(i));
+    // 		    System.out.printf("Removing page (%d,%d)\n", OPTlist.get(x).getPID(), OPTlist.get(x).getPageRef());
+    // 		    OPTlist.remove(checkIfExists(LRUlist, input.get(i)));
+    // 		    OPTlist.add(input.get(i));
+    // 		    System.out.printf("Adding page (%d,%d)\n", input.get(i).getPID(), input.get(i).getPageRef());
+    // 		}
+    // 	    }
+    // 	    else {
+    // 		for (int j = 0; j < input.size(); j++){
+    // 		    if ((input.get(i+1).getPID() == OPTlist.get(j).getPID()) && (input.get(i+1).getPageRef() == OPTlist.get(j).getpageRef())) {
+    // 			crystalBall.add(OPTlist.get(j));
+    // 		    }
+    // 		    if (crystalBall.size() == OPTlist.size()){
+    // 			OPTlist.remove(crystalBall.get(crystalBall.size()-1));
+    // 			OPTlist.add(input.get(i));
+    // 			numPageFaults++;
+    // 		    }
+    // 		    else {
+    // 			for (int k = 0; k < OPTlist.size(); k++){
+    // 			    for (int c = 0; c < crystalBall.size(); c++){
+    // 				if ((crystalBall.get(i+1).getPID() == OPTlist.get(k).getPID()) && (crystallBall.get(i+1).getPageRef() == OPTlist.get(k).getpageRef())) {
+    // 				    continue;
+    // 				}
+    // 			    }
+    // 			}
+    // 		    }
+    // 		}
+    // 	    }
+    // 	}
+    // }
     public static int lookAhead(ArrayList<Process> input, ArrayList<Process> OPTlist, int index){
 	int result = -1;
 	int farthest = index;
@@ -98,30 +161,30 @@ public class MemoryManagement {
 	    return result;
 	}
     }
+    
+    // public static int runOPT(ArrayList<Process> input, int frames){
+    // 	int numPageFaults = 0;
+    // 	ArrayList<Process> OPTlist = new ArrayList<>();
+    // 	for (int i = 0; i < input.size(); i++){
+    // 	    if (checkIfExists(OPTlist, input.get(i)) > -1) {   // Check that it doesn't exist
+    // 		numPageFaults++;
+    // 		continue;
+    // 	    }
 
-    public static int runOPT(ArrayList<Process> input, int frames){
-	int numPageFaults = 0;
-	ArrayList<Process> OPTlist = new ArrayList<>();
-	for (int i = 0; i < input.size(); i++){
-	    if (checkIfExists(OPTlist, input.get(i)) > -1) {   // Check that it doesn't exist
-		numPageFaults++;
-		continue;
-	    }
-
-	    if (OPTlist.size() < frames) {
-		System.out.printf("adding page (%d,%d)\n", input.get(i).getPID(), input.get(i).getPageRef());
-		OPTlist.add(input.get(i));
-	    }
-	    else {
-		int j = lookAhead(input, OPTlist, i+1);
-		System.out.printf("    removing page (%d,%d)\n", OPTlist.get(j).getPID(), OPTlist.get(j).getPageRef());
-		OPTlist.remove(j);
-		System.out.printf("adding page (%d,%d)\n", input.get(i).getPID(), input.get(i).getPageRef());
-		OPTlist.add(input.get(i));
-	    }
-	}
-	return numPageFaults;
-    }
+    // 	    if (OPTlist.size() < frames) {
+    // 		//System.out.printf("adding page (%d,%d)\n", input.get(i).getPID(), input.get(i).getPageRef());
+    // 		OPTlist.add(input.get(i));
+    // 	    }
+    // 	    else {
+    // 		int j = lookAhead(input, OPTlist, i+1);
+    // 		//System.out.printf("    removing page (%d,%d)\n", OPTlist.get(j).getPID(), OPTlist.get(j).getPageRef());
+    // 		OPTlist.remove(j);
+    // 		//System.out.printf("adding page (%d,%d)\n", input.get(i).getPID(), input.get(i).getPageRef());
+    // 		OPTlist.add(input.get(i));
+    // 	    }
+    // 	}
+    // 	return numPageFaults;
+    // }
     
     public static int runLRU(ArrayList<Process> input, int frames){
 	int numPageFaults = 0;
@@ -130,29 +193,29 @@ public class MemoryManagement {
 	    if (LRUlist.size() < frames) {
 		if (checkIfExists(LRUlist, input.get(i)) == -1) {   // Check that it doesn't exist
 		    LRUlist.add(input.get(i));
-		    System.out.printf("Adding page (%d,%d)\n", input.get(i).getPID(), input.get(i).getPageRef());
+		    //System.out.printf("Adding page (%d,%d)\n", input.get(i).getPID(), input.get(i).getPageRef());
 		    numPageFaults++;
 		} else {
 		    int x = checkIfExists(LRUlist, input.get(i));
-		    System.out.printf("Removing page (%d,%d)\n", LRUlist.get(x).getPID(), LRUlist.get(x).getPageRef());
+		    //System.out.printf("Removing page (%d,%d)\n", LRUlist.get(x).getPID(), LRUlist.get(x).getPageRef());
 		    LRUlist.remove(checkIfExists(LRUlist, input.get(i)));
 		    LRUlist.add(input.get(i));
-		    System.out.printf("Adding page (%d,%d)\n", input.get(i).getPID(), input.get(i).getPageRef());
+		    //System.out.printf("Adding page (%d,%d)\n", input.get(i).getPID(), input.get(i).getPageRef());
 		}
 	    } else {
 		
 		if (checkIfExists(LRUlist, input.get(i)) > -1) {
 		    int x = checkIfExists(LRUlist, input.get(i));
-		    System.out.printf("Removing page (%d,%d)\n", LRUlist.get(x).getPID(), LRUlist.get(x).getPageRef());
+		    //System.out.printf("Removing page (%d,%d)\n", LRUlist.get(x).getPID(), LRUlist.get(x).getPageRef());
 		    //System.out.printf("Removing page (%d,%d)\n", LRUlist.get(checkIfExists(LRUlist, input.get(i))).getPID(), LRUlist.get(checkIfExists(LRUlist, input.get(i)).getPageRef()));
 		    LRUlist.remove(checkIfExists(LRUlist, input.get(i)));
 		    LRUlist.add(input.get(i));
-		    System.out.printf("Adding page (%d,%d)\n", input.get(i).getPID(), input.get(i).getPageRef());
+		    //System.out.printf("Adding page (%d,%d)\n", input.get(i).getPID(), input.get(i).getPageRef());
 		} else {
-		    System.out.printf("Removing page (%d,%d)\n", LRUlist.get(0).getPID(), LRUlist.get(0).getPageRef());
+		    //System.out.printf("Removing page (%d,%d)\n", LRUlist.get(0).getPID(), LRUlist.get(0).getPageRef());
 		    LRUlist.remove(0);
 		    LRUlist.add(input.get(i));
-		    System.out.printf("Adding page (%d,%d)\n", input.get(i).getPID(), input.get(i).getPageRef());
+		    //System.out.printf("Adding page (%d,%d)\n", input.get(i).getPID(), input.get(i).getPageRef());
 		    numPageFaults++;
 		}
 	    }
@@ -167,7 +230,7 @@ public class MemoryManagement {
 	    if (FIFOqueue.size() < frames) {
 		if (!checkIfExists(FIFOqueue, input.get(i))) {
 		    FIFOqueue.add(input.get(i));
-		    System.out.printf("Adding page (%d,%d)\n", input.get(i).getPID(), input.get(i).getPageRef());
+		    //System.out.printf("Adding page (%d,%d)\n", input.get(i).getPID(), input.get(i).getPageRef());
 		    numPageFaults++;
 		}
 	    }
@@ -175,7 +238,7 @@ public class MemoryManagement {
 		if (!checkIfExists(FIFOqueue, input.get(i))) {
 		    FIFOqueue.remove();
 		    FIFOqueue.add(input.get(i));
-		    System.out.printf("Adding page (%d,%d)\n", input.get(i).getPID(), input.get(i).getPageRef());
+		    //System.out.printf("Adding page (%d,%d)\n", input.get(i).getPID(), input.get(i).getPageRef());
 		    numPageFaults++;
 		}
 	    }
@@ -186,6 +249,7 @@ public class MemoryManagement {
     public static int checkIfExists(ArrayList<Process> queue, Process p) {
 	int counter = 0;
 	for (Process item: queue){
+	    //System.out.println("hi");  tHis is where the problem is
 	    if ((p.getPID() == item.getPID()) && (p.getPageRef() == item.getPageRef())) { 
 		return counter;
 	    }
