@@ -20,6 +20,7 @@ public class MemoryManagement {
 	    System.exit(0);
 	}
         numFrames = Integer.parseInt(args[1]);
+	// ArrayList to load input into from file
 	ArrayList<Process> inputProcesses = new ArrayList<Process>();
 	File inputFile = new File(args[0]);
 	BufferedReader br = new BufferedReader(new FileReader(inputFile));
@@ -35,9 +36,8 @@ public class MemoryManagement {
 	System.out.printf("OPT(w/ %d frames): # of page faults: %d\n", numFrames, result); 
     }
 
+    // Function that returns the index of the next occurence of a chosen process, or return -1
     public static int getNextOccurrence(ArrayList<Process> input, Process p, int index){
-	//System.out.printf("index = %d, and input.size() = %d\n", index, input.size());
-	//System.out.printf("ing page ()\n");
 	for (int i = index; i < input.size(); i++){
 	    if ((p.getPID() == input.get(i).getPID()) && (p.getPageRef() == input.get(i).getPageRef())) { 
 		return i;
@@ -46,6 +46,7 @@ public class MemoryManagement {
 	return -1;
     }
 
+    // Function to simulate the OPT memory management algorithm with a specified number of frames
     public static int runOPT(ArrayList<Process> input, int frames){
      	int numPageFaults = 0;
 	ArrayList<Process> OPTlist = new ArrayList<>();
@@ -77,6 +78,7 @@ public class MemoryManagement {
 	return numPageFaults;
     }
 
+    // Function that removes the element in the ArrayList that is used furthest in the future
     public static void removeMaxOPTRef(ArrayList<Process> list){
 	Process max = list.get(0);
 	//System.out.printf("max uptsize: %d \n", max.getOptRef());
@@ -138,31 +140,32 @@ public class MemoryManagement {
     // 	    }
     // 	}
     // }
-    public static int lookAhead(ArrayList<Process> input, ArrayList<Process> OPTlist, int index){
-	int result = -1;
-	int farthest = index;
-	for (int i = 0; i < OPTlist.size(); i++) {
-	    int j;
-	    for (j = index; j < input.size(); j++) {
-		if ((OPTlist.get(i).getPID() == input.get(j).getPID()) && (OPTlist.get(i).getPageRef() == input.get(j).getPageRef())){
-		    if (j > farthest) {
-			farthest = j;
-			result = i;
-		    }
-		    break;
-		}
-	    }
-	    if (j == input.size()) {
-		return i;
-	    }
-	}
-	if (result == -1) {
-	    return 0;
-	}
-	else {
-	    return result;
-	}
-    }
+    // public static int lookAhead(ArrayList<Process> input, ArrayList<Process> OPTlist, int index){
+    // 	int result = -1;
+    // 	int farthest = index;
+    // 	for (int i = 0; i < OPTlist.size(); i++) {
+    // 	    int j;
+    // 	    for (j = index; j < input.size(); j++) {
+    // 		if ((OPTlist.get(i).getPID() == input.get(j).getPID()) &&
+    // 		    (OPTlist.get(i).getPageRef() == input.get(j).getPageRef())){
+    // 		    if (j > farthest) {
+    // 			farthest = j;
+    // 			result = i;
+    // 		    }
+    // 		    break;
+    // 		}
+    // 	    }
+    // 	    if (j == input.size()) {
+    // 		return i;
+    // 	    }
+    // 	}
+    // 	if (result == -1) {
+    // 	    return 0;
+    // 	}
+    // 	else {
+    // 	    return result;
+    // 	}
+    // }
     
     // public static int runOPT(ArrayList<Process> input, int frames){
     // 	int numPageFaults = 0;
@@ -187,7 +190,8 @@ public class MemoryManagement {
     // 	}
     // 	return numPageFaults;
     // }
-    
+
+    // Function to simulate the LRU memory management algorithm with a specified number of frames
     public static int runLRU(ArrayList<Process> input, int frames){
 	int numPageFaults = 0;
 	ArrayList<Process> LRUlist = new ArrayList<>();
@@ -224,7 +228,8 @@ public class MemoryManagement {
 	}
 	return numPageFaults;
     }
-    
+
+    // Function to simulate the FIFO memory management algorithm with a specified number of frames
     public static int runFIFO(ArrayList<Process> input, int frames){
 	int numPageFaults = 0;
 	Queue<Process> FIFOqueue = new LinkedList<>();
@@ -247,7 +252,8 @@ public class MemoryManagement {
 	}
 	return numPageFaults;
     }
-    
+
+    // Function to return the index of an element that exists in an ArrayList, or return -1 if doesn't exist
     public static int checkIfExists(ArrayList<Process> queue, Process p) {
 	int counter = 0;
 	for (Process item: queue){
@@ -258,7 +264,8 @@ public class MemoryManagement {
 	}
 	return -1;
     }
-    
+
+    // Function to tell whether a process alredy exists in a queue
     public static boolean checkIfExists(Queue<Process> queue, Process p) {
 	for (Process item: queue){
 	    if ((p.getPID() == item.getPID()) && (p.getPageRef() == item.getPageRef())) { 
@@ -267,7 +274,8 @@ public class MemoryManagement {
 	}
 	return false;
     }
-    
+
+    // Function to load input from a file to be store/return in an ArrayList
     public static ArrayList<Process> loadInput(BufferedReader br) throws java.io.IOException {
 	ArrayList<Process> processLoader = new ArrayList<Process>();
 	String lineInput;
@@ -277,6 +285,7 @@ public class MemoryManagement {
 	return processLoader;
     }
 
+    // Function to return the digit requested from the string input
     public static int getDigit(String command, String index){
 	int res = 0;
         Scanner sc = new Scanner(command);
