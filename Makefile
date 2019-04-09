@@ -5,7 +5,7 @@ JC = javac
 	$(JC) $(JFLAGS) $*.java
 
 CLASSES = \
-	Process.java \
+	Page.java \
 	MemoryManagement.java \
 
 default: classes

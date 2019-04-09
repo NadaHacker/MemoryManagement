@@ -1,5 +1,5 @@
 /*
-File: <Process.java>
+File: <Page.java>
 Class: CS 470
 Assignment: Memory Management Project
 Programmers: Oti Oritsejafor, Jared Holzmeyer
@@ -8,12 +8,12 @@ Programmers: Oti Oritsejafor, Jared Holzmeyer
 import java.util.*;
 import java.lang.*;
 
-public class Process {
+public class Page {
     protected int pid;
     protected int pageRef;
     protected int OptRef;
 
-    public Process(int pid, int pageRef) {
+    public Page(int pid, int pageRef) {
 	this.pid = pid;
 	this.pageRef = pageRef;
     }

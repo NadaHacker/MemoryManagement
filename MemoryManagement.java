@@ -11,7 +11,6 @@ import java.io.*;
 
 
 public class MemoryManagement {
-    public static String MemManType = "FIFO";
     public static int numFrames;
     
     public static void main(String [] args) throws java.io.IOException {
@@ -21,23 +20,23 @@ public class MemoryManagement {
 	}
         numFrames = Integer.parseInt(args[1]);
 	// ArrayList to load input into from file
-	ArrayList<Process> inputProcesses = new ArrayList<Process>();
+	ArrayList<Page> inputPages = new ArrayList<Page>();
 	File inputFile = new File(args[0]);
 	BufferedReader br = new BufferedReader(new FileReader(inputFile));
 	if (inputFile.isFile() && inputFile.canRead()){
-	    inputProcesses = loadInput(br);
+	    inputPages = loadInput(br);
 	}
 	int result = 0;
-	result = runLRU(inputProcesses, numFrames);
-	System.out.printf("LRU(w/ %d frames): # of page faults: %d\n", numFrames, result); 
-	result = runFIFO(inputProcesses, numFrames);
+	result = runFIFO(inputPages, numFrames);
 	System.out.printf("FIFO(w/ %d frames): # of page faults: %d\n", numFrames, result); 
-	result = runOPT(inputProcesses, numFrames);
+	result = runLRU(inputPages, numFrames);
+	System.out.printf("LRU(w/ %d frames): # of page faults: %d\n", numFrames, result); 
+	result = runOPT(inputPages, numFrames);
 	System.out.printf("OPT(w/ %d frames): # of page faults: %d\n", numFrames, result); 
     }
 
     // Function that returns the index of the next occurence of a chosen process, or return -1
-    public static int getNextOccurrence(ArrayList<Process> input, Process p, int index){
+    public static int getNextOccurrence(ArrayList<Page> input, Page p, int index){
 	for (int i = index; i < input.size(); i++){
 	    if ((p.getPID() == input.get(i).getPID()) && (p.getPageRef() == input.get(i).getPageRef())) { 
 		return i;
@@ -47,13 +46,13 @@ public class MemoryManagement {
     }
 
     // Function to simulate the OPT memory management algorithm with a specified number of frames
-    public static int runOPT(ArrayList<Process> input, int frames){
+    public static int runOPT(ArrayList<Page> input, int frames){
      	int numPageFaults = 0;
-	ArrayList<Process> OPTlist = new ArrayList<>();
+	ArrayList<Page> OPTlist = new ArrayList<>();
 	for (int i = 0; i < input.size(); i++) {
 	    if (OPTlist.size() < frames) {
 		if (checkIfExists(OPTlist, input.get(i)) == -1) { //doesn't exist
-		    Process current = new Process(input.get(i).getPID(), input.get(i).getPageRef());
+		    Page current = new Page(input.get(i).getPID(), input.get(i).getPageRef());
 		    current.setOptRef(getNextOccurrence(input, current, i+1));
 		    OPTlist.add(current);
 		    //System.out.printf("Adding page (%d,%d)\n", current.getPID(), current.getPageRef());
@@ -68,7 +67,7 @@ public class MemoryManagement {
 	    }
 	    else {
 	        removeMaxOPTRef(OPTlist);
-		Process current = new Process(input.get(i).getPID(), input.get(i).getPageRef());
+		Page current = new Page(input.get(i).getPID(), input.get(i).getPageRef());
 		current.setOptRef(getNextOccurrence(input, current, i+1));
 		OPTlist.add(current);
 		//System.out.printf("Adding page (%d,%d)\n", current.getPID(), current.getPageRef());
@@ -79,8 +78,8 @@ public class MemoryManagement {
     }
 
     // Function that removes the element in the ArrayList that is used furthest in the future
-    public static void removeMaxOPTRef(ArrayList<Process> list){
-	Process max = list.get(0);
+    public static void removeMaxOPTRef(ArrayList<Page> list){
+	Page max = list.get(0);
 	//System.out.printf("max uptsize: %d \n", max.getOptRef());
 	for (int i = 0; i < list.size(); i++){
 	    if (list.get(i).getOptRef() == -1){
@@ -192,9 +191,9 @@ public class MemoryManagement {
     // }
 
     // Function to simulate the LRU memory management algorithm with a specified number of frames
-    public static int runLRU(ArrayList<Process> input, int frames){
+    public static int runLRU(ArrayList<Page> input, int frames){
 	int numPageFaults = 0;
-	ArrayList<Process> LRUlist = new ArrayList<>();
+	ArrayList<Page> LRUlist = new ArrayList<>();
 	for (int i = 0; i < input.size(); i++) {	   
 	    if (LRUlist.size() < frames) {
 		if (checkIfExists(LRUlist, input.get(i)) == -1) {   // Check that it doesn't exist
@@ -230,9 +229,9 @@ public class MemoryManagement {
     }
 
     // Function to simulate the FIFO memory management algorithm with a specified number of frames
-    public static int runFIFO(ArrayList<Process> input, int frames){
+    public static int runFIFO(ArrayList<Page> input, int frames){
 	int numPageFaults = 0;
-	Queue<Process> FIFOqueue = new LinkedList<>();
+	Queue<Page> FIFOqueue = new LinkedList<>();
 	for (int i = 0; i < input.size(); i++){
 	    if (FIFOqueue.size() < frames) {
 		if (!checkIfExists(FIFOqueue, input.get(i))) {
@@ -254,9 +253,9 @@ public class MemoryManagement {
     }
 
     // Function to return the index of an element that exists in an ArrayList, or return -1 if doesn't exist
-    public static int checkIfExists(ArrayList<Process> queue, Process p) {
+    public static int checkIfExists(ArrayList<Page> queue, Page p) {
 	int counter = 0;
-	for (Process item: queue){
+	for (Page item: queue){
 	    if ((p.getPID() == item.getPID()) && (p.getPageRef() == item.getPageRef())) {
 		return counter;
 	    }
@@ -266,8 +265,8 @@ public class MemoryManagement {
     }
 
     // Function to tell whether a process alredy exists in a queue
-    public static boolean checkIfExists(Queue<Process> queue, Process p) {
-	for (Process item: queue){
+    public static boolean checkIfExists(Queue<Page> queue, Page p) {
+	for (Page item: queue){
 	    if ((p.getPID() == item.getPID()) && (p.getPageRef() == item.getPageRef())) { 
 		return true;
 	    }  
@@ -276,13 +275,13 @@ public class MemoryManagement {
     }
 
     // Function to load input from a file to be store/return in an ArrayList
-    public static ArrayList<Process> loadInput(BufferedReader br) throws java.io.IOException {
-	ArrayList<Process> processLoader = new ArrayList<Process>();
+    public static ArrayList<Page> loadInput(BufferedReader br) throws java.io.IOException {
+	ArrayList<Page> pageLoader = new ArrayList<Page>();
 	String lineInput;
 	while((lineInput = br.readLine()) != null){
-	    processLoader.add(new Process(getDigit(lineInput, "first"), getDigit(lineInput, "second")));
+	    pageLoader.add(new Page(getDigit(lineInput, "first"), getDigit(lineInput, "second")));
 	}
-	return processLoader;
+	return pageLoader;
     }
 
     // Function to return the digit requested from the string input
